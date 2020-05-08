@@ -47,6 +47,9 @@ spec:
         fsGroup: {{ .Values.server.gid | default 1000 }}
       volumes:
         {{ template "vault.volumes" . }}
+        - name: softhsm-data
+          persistentVolumeClaim:
+            claimName: softhsm-data-pvc
       containers:
         - name: vault
           {{ template "vault.resources" . }}
@@ -79,6 +82,8 @@ spec:
             {{- include "vault.extraSecretEnvironmentVars" .Values.server | nindent 12 }}
           volumeMounts:
           {{ template "vault.mounts" . }}
+            - name: softhsm-data
+              mountPath: /softhsm-data
           ports:
             - containerPort: 8200
               name: http
@@ -101,7 +106,7 @@ spec:
             timeoutSeconds: 5
           lifecycle:
             # Vault container doesn't receive SIGTERM from Kubernetes
-            # and after the grace period ends, Kube sends SIGKILL.  This 
+            # and after the grace period ends, Kube sends SIGKILL.  This
             # causes issues with graceful shutdowns such as deregistering itself
             # from Consul (zombie services).
             preStop:
